@@ -1,0 +1,95 @@
+version: '3.8'
+
+services:
+  # PostgreSQL数据库
+  postgres:
+    image: postgres:16-alpine
+    container_name: sesp-postgres
+    environment:
+      POSTGRES_USER: sesp
+      POSTGRES_PASSWORD: sesp123
+      POSTGRES_DB: sesp_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U sesp"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Neo4j图数据库
+  neo4j:
+    image: neo4j:5-community
+    container_name: sesp-neo4j
+    environment:
+      NEO4J_AUTH: neo4j/sesp123
+      NEO4J_PLUGINS: '["apoc", "gds"]'
+    ports:
+      - "7474:7474"
+      - "7687:7687"
+    volumes:
+      - neo4j_data:/data
+      - neo4j_logs:/logs
+
+  # Redis缓存
+  redis:
+    image: redis:7-alpine
+    container_name: sesp-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+
+  # 后端API服务
+  api:
+    build:
+      context: ./apps/api
+      dockerfile: Dockerfile
+    container_name: sesp-api
+    environment:
+      NODE_ENV: development
+      PORT: 8080
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_USERNAME: sesp
+      DB_PASSWORD: sesp123
+      DB_NAME: sesp_db
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      JWT_SECRET: your-jwt-secret-key
+    ports:
+      - "8080:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      neo4j:
+        condition: service_started
+      redis:
+        condition: service_started
+    volumes:
+      - ./apps/api/src:/app/src
+      - /app/node_modules
+
+  # 前端Web服务
+  web:
+    build:
+      context: ./apps/web
+      dockerfile: Dockerfile
+    container_name: sesp-web
+    environment:
+      VITE_API_URL: http://localhost:8080
+    ports:
+      - "3000:3000"
+    depends_on:
+      - api
+    volumes:
+      - ./apps/web/src:/app/src
+      - /app/node_modules
+
+volumes:
+  postgres_data:
+  neo4j_data:
+  neo4j_logs:
+  redis_data:
