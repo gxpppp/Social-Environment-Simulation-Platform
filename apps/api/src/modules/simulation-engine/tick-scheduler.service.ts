@@ -246,6 +246,10 @@ export class TickSchedulerService {
     this.stop();
     this.currentTick = 0;
     this.totalTicks = 0;
+    // 不要重新创建Subject，而是complete它们
+    this.tickSubject.complete();
+    this.completeSubject.complete();
+    // 创建新的Subject
     this.tickSubject = new Subject<TickState>();
     this.completeSubject = new Subject<void>();
   }

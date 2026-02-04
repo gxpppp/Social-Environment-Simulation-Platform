@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { Card, Form, Input, Button, Select, Switch, message, List, Tag, Spin } from 'antd'
+import { Card, Form, Input, Button, Select, Switch, message, List, Tag, Spin, Space } from 'antd'
 import { useSettingsStore } from '@/stores/settings.store'
 import { modelApi, ModelInfo } from '@/services/model.service'
 import { KeyOutlined, RobotOutlined, DollarOutlined } from '@ant-design/icons'
@@ -207,6 +207,3 @@ export const Settings: React.FC = () => {
     </div>
   )
 }
-
-// 添加Space组件导入
-import { Space } from 'antd'

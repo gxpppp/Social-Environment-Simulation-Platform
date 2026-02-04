@@ -116,27 +116,40 @@ export class SimulationEngineService {
    */
   private async handleTick(sessionId: string, tick: number): Promise<void> {
     const session = this.sessions.get(sessionId);
-    if (!session) return;
+    if (!session) {
+      this.logger.warn(`Session ${sessionId} not found`);
+      return;
+    }
 
-    session.currentTick = tick;
+    try {
+      session.currentTick = tick;
 
-    // 1. 处理外部事件
-    await this.processExternalEvents(sessionId, tick);
+      // 1. 处理外部事件
+      await this.processExternalEvents(sessionId, tick);
 
-    // 2. Agent决策和行动
-    await this.processAgentActions(sessionId, tick);
+      // 2. Agent决策和行动
+      await this.processAgentActions(sessionId, tick);
 
-    // 3. 网络演化
-    this.evolveNetwork(sessionId, tick);
+      // 3. 网络演化
+      this.evolveNetwork(sessionId, tick);
 
-    // 4. 更新指标
-    this.updateMetrics(sessionId);
+      // 4. 更新指标
+      this.updateMetrics(sessionId);
 
-    // 5. 广播状态
-    this.broadcastState(sessionId);
+      // 5. 广播状态
+      this.broadcastState(sessionId);
 
-    // 6. 更新会话状态
-    session.recentEvents = this.eventManager.getRecentEvents(5);
+      // 6. 更新会话状态
+      session.recentEvents = this.eventManager.getRecentEvents(5);
+
+      this.logger.debug(`Tick ${tick} processed for session ${sessionId}`);
+    } catch (error) {
+      this.logger.error(
+        `Error processing tick ${tick} for session ${sessionId}: ${error.message}`,
+        error.stack,
+      );
+      // 继续运行，不要中断模拟
+    }
   }
 
   /**
