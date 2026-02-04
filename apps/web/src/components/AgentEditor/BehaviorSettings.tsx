@@ -1,11 +1,5 @@
 import React from 'react'
-import { Card, Radio, Slider, Typography, Tag, Row, Col, Space } from 'antd'
-import { 
-  DecisionSvg, 
-  RiskSvg, 
-  SocialSvg, 
-  InfluenceSvg 
-} from './icons'
+import { Card, Radio, Slider, Typography, Tag, Row, Col } from 'antd'
 
 const { Text } = Typography
 
@@ -89,7 +83,7 @@ export const BehaviorSettings: React.FC<BehaviorSettingsProps> = ({
     onChange({ ...value, influence: e.target.value })
   }
 
-  const getRiskLabel = (value: number) => {
+  const getRiskInfo = (value: number) => {
     if (value < 0.3) return { label: '保守型', color: '#52c41a' }
     if (value < 0.6) return { label: '稳健型', color: '#faad14' }
     return { label: '激进型', color: '#f5222d' }
@@ -101,7 +95,7 @@ export const BehaviorSettings: React.FC<BehaviorSettingsProps> = ({
     return { label: '外向型', color: '#eb2f96' }
   }
 
-  const riskInfo = getRiskLabel(value.riskTolerance)
+  const riskInfo = getRiskInfo(value.riskTolerance)
   const socialInfo = getSocialLabel(value.socialOrientation)
 
   return (
@@ -147,7 +141,7 @@ export const BehaviorSettings: React.FC<BehaviorSettingsProps> = ({
                         </Text>
                         <div>
                           {style.characteristics.map((char) => (
-                            <Tag key={char} size="small" style={{ margin: '2px 4px 2px 0' }}>
+                            <Tag key={char} style={{ margin: '2px 4px 2px 0', fontSize: 12 }}>
                               {char}
                             </Tag>
                           ))}
@@ -343,7 +337,7 @@ const BehaviorSummary: React.FC<{ value: BehaviorSettingsProps['value'] }> = ({ 
           <Tag style={{ margin: '0 4px' }}>{getDecisionStyleLabel()}</Tag>
           的决策特征，
           具有
-          <Tag style={{ margin: '0 4px' }}>{getRiskLabel(value.riskTolerance).label}</Tag>
+          <Tag style={{ margin: '0 4px' }}>{getRiskInfo(value.riskTolerance).label}</Tag>
           的风险偏好，
           并能够在
           <Tag style={{ margin: '0 4px' }}>{getInfluenceLabel()}</Tag>

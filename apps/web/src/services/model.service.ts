@@ -11,6 +11,9 @@ export interface ModelInfo {
     output: number
   }
   capabilities: string[]
+  category: 'text' | 'vision' | 'embedding' | 'audio' | 'reranker'
+  isPro: boolean
+  provider: string
 }
 
 export interface GenerateRequest {
@@ -35,8 +38,16 @@ export interface GenerateResponse {
 
 export const modelApi = {
   // 获取可用模型列表
-  getAvailableModels: (): Promise<ModelInfo[]> =>
-    api.get('/models/available'),
+  getAvailableModels: (category?: string, search?: string): Promise<ModelInfo[]> =>
+    api.get('/models/available', { params: { category, search } }),
+
+  // 获取模型分类列表
+  getModelCategories: (): Promise<{ value: string; label: string; count: number }[]> =>
+    api.get('/models/categories'),
+
+  // 搜索模型
+  searchModels: (query: string, category?: string): Promise<ModelInfo[]> =>
+    api.get('/models/search', { params: { q: query, category } }),
 
   // 生成文本
   generate: (request: GenerateRequest): Promise<GenerateResponse> =>

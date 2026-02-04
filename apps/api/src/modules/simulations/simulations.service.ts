@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 
-interface SimulationSession {
+export interface SimulationSession {
   id: string;
   sceneId: string;
   status: 'running' | 'paused' | 'stopped' | 'completed';

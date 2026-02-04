@@ -1,9 +1,13 @@
-import { CacheModuleOptions } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import * as redisStore from 'cache-manager-redis-store';
 
-export const redisConfig = (configService: ConfigService): CacheModuleOptions => ({
-  store: redisStore,
+export interface RedisConfig {
+  host: string;
+  port: number;
+  ttl: number;
+  max: number;
+}
+
+export const redisConfig = (configService: ConfigService): RedisConfig => ({
   host: configService.get('REDIS_HOST', 'localhost'),
   port: configService.get('REDIS_PORT', 6379),
   ttl: 300, // 默认缓存5分钟

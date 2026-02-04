@@ -17,6 +17,14 @@ describe('TickSchedulerService', () => {
   });
 
   describe('initialize', () => {
+    beforeEach(() => {
+      jest.useFakeTimers();
+    });
+
+    afterEach(() => {
+      jest.useRealTimers();
+    });
+
     it('should initialize with correct values', () => {
       service.initialize({ totalTicks: 100, tickInterval: 1000 });
       expect(service.getCurrentTick()).toBe(0);

@@ -140,9 +140,11 @@ describe('NetworkManagerService', () => {
       service.addEdge('node1', 'node4');
       service.addEdge('node2', 'node4');
       // node1 has 3 neighbors (node2, node3, node4)
-      // Only node2-node3 are connected
-      // Clustering coefficient = 1 / 3 = 0.33...
-      expect(service.calculateClusteringCoefficient('node1')).toBeCloseTo(0.33, 1);
+      // node2-node3 are connected, node2-node4 are connected, node3-node4 are not connected
+      // Possible triangles: (node2, node3), (node2, node4), (node3, node4)
+      // Actual triangles: (node2, node3), (node2, node4)
+      // Clustering coefficient = 2 / 3 = 0.67...
+      expect(service.calculateClusteringCoefficient('node1')).toBeCloseTo(0.67, 1);
     });
   });
 

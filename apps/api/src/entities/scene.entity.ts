@@ -29,8 +29,13 @@ export class Scene {
   config: {
     duration: number;
     timeStep: string;
-    environment: Record<string, any>;
-    rules: Record<string, any>;
+    environment?: Record<string, any>;
+    rules?: Record<string, any>;
+    agents?: Array<{
+      agentId: string;
+      initialStance: number;
+      role: string;
+    }>;
   };
 
   @Column({ default: 'draft' })

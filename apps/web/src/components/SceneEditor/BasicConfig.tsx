@@ -1,276 +1,424 @@
-import React from 'react'
-import { Form, Input, Select, Radio, Card, Typography, Row, Col, Slider } from 'antd'
-import { 
-  FileTextOutlined, 
-  ClockCircleOutlined, 
-  TagOutlined,
-  AppstoreOutlined
+import React, { useState, useEffect } from 'react'
+import {
+  Form,
+  Input,
+  Select,
+  DatePicker,
+  InputNumber,
+  Card,
+  Row,
+  Col,
+  Typography,
+  Space,
+  Tooltip,
+  Badge,
+  Divider,
+  Switch,
+  Slider,
+  Alert,
+  Button,
+  Radio,
+} from 'antd'
+import {
+  ClockCircleOutlined,
+  CalendarOutlined,
+  SettingOutlined,
+  InfoCircleOutlined,
+  HistoryOutlined,
+  ThunderboltOutlined,
+  HourglassOutlined,
+  FieldTimeOutlined,
 } from '@ant-design/icons'
+import type { Dayjs } from 'dayjs'
+import dayjs from 'dayjs'
 
-const { TextArea } = Input
-const { Text } = Typography
+const { Text, Title, Paragraph } = Typography
 const { Option } = Select
+const { RangePicker } = DatePicker
+const { TextArea } = Input
 
-// 场景类型选项
-const sceneTypes = [
+// 时间步长选项
+interface TimeStepOption {
+  value: string
+  label: string
+  description: string
+  icon: React.ReactNode
+  days: number
+  granularity: 'fine' | 'normal' | 'coarse'
+}
+
+const timeStepOptions: TimeStepOption[] = [
   {
-    value: 'policy',
-    label: '政策评估',
-    description: '评估政策发布后的社会影响',
-    icon: '📋',
-    color: '#1890ff',
+    value: 'hour',
+    label: '1小时',
+    description: '精细模拟，适合短期事件',
+    icon: <FieldTimeOutlined />,
+    days: 1 / 24,
+    granularity: 'fine',
   },
   {
-    value: 'opinion',
-    label: '舆论演化',
-    description: '模拟观点在社会中的传播过程',
-    icon: '💬',
-    color: '#52c41a',
+    value: 'day',
+    label: '1天',
+    description: '日常粒度，适合日常模拟',
+    icon: <ClockCircleOutlined />,
+    days: 1,
+    granularity: 'normal',
   },
   {
-    value: 'market',
-    label: '市场分析',
-    description: '分析市场竞争和消费者行为',
-    icon: '📊',
-    color: '#faad14',
+    value: 'week',
+    label: '1周',
+    description: '周度粒度，适合中期趋势',
+    icon: <CalendarOutlined />,
+    days: 7,
+    granularity: 'normal',
   },
   {
-    value: 'training',
-    label: '团队培训',
-    description: '团队协作和决策能力训练',
-    icon: '🎓',
-    color: '#eb2f96',
+    value: 'month',
+    label: '1月',
+    description: '月度粒度，适合长期模拟',
+    icon: <HistoryOutlined />,
+    days: 30,
+    granularity: 'coarse',
+  },
+  {
+    value: 'quarter',
+    label: '1季度',
+    description: '季度粒度，适合宏观分析',
+    icon: <HourglassOutlined />,
+    days: 90,
+    granularity: 'coarse',
+  },
+  {
+    value: 'year',
+    label: '1年',
+    description: '年度粒度，适合战略模拟',
+    icon: <SettingOutlined />,
+    days: 365,
+    granularity: 'coarse',
   },
 ]
 
-// 时间步长选项
-const timeSteps = [
-  { value: 'day', label: '1天', description: '精细粒度，适合短期模拟' },
-  { value: 'week', label: '1周', description: '中等粒度，适合中期模拟' },
-  { value: 'month', label: '1月', description: '粗粒度，适合长期模拟' },
+// 预设模板
+const durationPresets = [
+  { name: '短期实验', duration: 365, timeStep: 'day', description: '1年，按天模拟' },
+  { name: '中期观察', duration: 730, timeStep: 'week', description: '2年，按周模拟' },
+  { name: '长期趋势', duration: 1825, timeStep: 'month', description: '5年，按月模拟' },
+  { name: '战略规划', duration: 3650, timeStep: 'quarter', description: '10年，按季度模拟' },
 ]
 
 interface BasicConfigProps {
-  value: {
-    name: string
-    description: string
-    type: string
-    duration: number
-    timeStep: string
+  value?: {
+    name?: string
+    description?: string
+    duration?: number
+    timeStep?: string
+    startDate?: Dayjs
+    endDate?: Dayjs
+    customDuration?: boolean
+    customTimeStep?: boolean
   }
-  onChange: (value: BasicConfigProps['value']) => void
+  onChange?: (value: any) => void
 }
 
-export const BasicConfig: React.FC<BasicConfigProps> = ({ value, onChange }) => {
-  const handleChange = (field: string, newValue: any) => {
-    onChange({ ...value, [field]: newValue })
+export default function BasicConfig({ value = {}, onChange }: BasicConfigProps) {
+  const [form] = Form.useForm()
+  const [useCustom, setUseCustom] = useState(false)
+  const [estimatedTicks, setEstimatedTicks] = useState(0)
+  const [selectedPreset, setSelectedPreset] = useState<string | null>(null)
+
+  // 计算预计Tick数
+  const calculateTicks = (duration: number, timeStep: string) => {
+    const stepOption = timeStepOptions.find((opt) => opt.value === timeStep)
+    if (!stepOption) return 0
+    return Math.ceil(duration / stepOption.days)
   }
+
+  // 更新表单值
+  const updateValue = (changedValues: any) => {
+    const newValue = { ...value, ...changedValues }
+    
+    // 计算预计Tick数
+    if (newValue.duration && newValue.timeStep) {
+      const ticks = calculateTicks(newValue.duration, newValue.timeStep)
+      setEstimatedTicks(ticks)
+    }
+    
+    onChange?.(newValue)
+  }
+
+  // 应用预设
+  const applyPreset = (preset: (typeof durationPresets)[0]) => {
+    form.setFieldsValue({
+      duration: preset.duration,
+      timeStep: preset.timeStep,
+    })
+    setSelectedPreset(preset.name)
+    updateValue({
+      duration: preset.duration,
+      timeStep: preset.timeStep,
+    })
+  }
+
+  // 监听表单变化
+  const handleValuesChange = (changedValues: any, allValues: any) => {
+    updateValue(allValues)
+    
+    // 如果用户手动修改，取消预设选择
+    if (changedValues.duration || changedValues.timeStep) {
+      setSelectedPreset(null)
+    }
+  }
+
+  // 初始化
+  useEffect(() => {
+    if (value.duration && value.timeStep) {
+      const ticks = calculateTicks(value.duration, value.timeStep)
+      setEstimatedTicks(ticks)
+    }
+  }, [])
 
   return (
     <div>
-      <Row gutter={[24, 24]}>
-        {/* 场景名称和描述 */}
-        <Col span={24}>
-          <Card title="基本信息" bordered={false}>
-            <Form layout="vertical">
+      <Title level={4}>
+        <SettingOutlined /> 基础配置
+      </Title>
+
+      <Form
+        form={form}
+        layout="vertical"
+        initialValues={{
+          name: value.name,
+          description: value.description,
+          duration: value.duration || 365,
+          timeStep: value.timeStep || 'day',
+          ...value,
+        }}
+        onValuesChange={handleValuesChange}
+      >
+        {/* 场景名称 */}
+        <Form.Item
+          label="场景名称"
+          name="name"
+          rules={[{ required: true, message: '请输入场景名称' }]}
+        >
+          <Input placeholder="例如：社交媒体舆论演化模拟" maxLength={100} showCount />
+        </Form.Item>
+
+        {/* 场景描述 */}
+        <Form.Item
+          label="场景描述"
+          name="description"
+          rules={[{ required: true, message: '请输入场景描述' }]}
+        >
+          <TextArea
+            placeholder="描述这个模拟场景的背景、目的和预期结果..."
+            rows={4}
+            maxLength={500}
+            showCount
+          />
+        </Form.Item>
+
+        <Divider />
+
+        {/* 时间配置 */}
+        <Card
+          title={
+            <Space>
+              <ClockCircleOutlined />
+              <span>时间配置</span>
+              <Badge
+                count={`预计 ${estimatedTicks.toLocaleString()} 个Tick`}
+                style={{ backgroundColor: '#1890ff' }}
+              />
+            </Space>
+          }
+          style={{ marginBottom: 24 }}
+        >
+          {/* 预设模板 */}
+          <Alert
+            message="快速选择预设"
+            description="选择适合您研究目标的预设配置，或自定义设置"
+            type="info"
+            showIcon
+            style={{ marginBottom: 16 }}
+          />
+
+          <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
+            {durationPresets.map((preset) => (
+              <Col xs={24} sm={12} md={6} key={preset.name}>
+                <Card
+                  size="small"
+                  hoverable
+                  onClick={() => applyPreset(preset)}
+                  style={{
+                    borderColor: selectedPreset === preset.name ? '#1890ff' : undefined,
+                    backgroundColor: selectedPreset === preset.name ? '#e6f7ff' : undefined,
+                  }}
+                >
+                  <Space direction="vertical" size={4}>
+                    <Text strong>{preset.name}</Text>
+                    <Text type="secondary" style={{ fontSize: 12 }}>
+                      {preset.description}
+                    </Text>
+                  </Space>
+                </Card>
+              </Col>
+            ))}
+          </Row>
+
+          <Divider style={{ margin: '16px 0' }}>
+            <Text type="secondary">或自定义配置</Text>
+          </Divider>
+
+          {/* 自定义配置 */}
+          <Row gutter={16}>
+            <Col xs={24} md={12}>
               <Form.Item
-                label="场景名称"
-                required
-                tooltip="给场景起一个简洁明了的名称"
+                label="模拟时长"
+                name="duration"
+                rules={[
+                  { required: true, message: '请输入模拟时长' },
+                  { type: 'number', min: 365, message: '模拟时长至少为1年（365天）' },
+                ]}
+                tooltip="模拟的总时间跨度，最少1年"
               >
-                <Input
-                  prefix={<FileTextOutlined />}
-                  placeholder="例如：新能源汽车补贴政策影响评估"
-                  value={value.name}
-                  onChange={(e) => handleChange('name', e.target.value)}
-                  maxLength={100}
-                  showCount
+                <InputNumber
+                  style={{ width: '100%' }}
+                  min={365}
+                  max={36500}
+                  step={1}
+                  addonAfter="天"
+                  placeholder="365"
                 />
               </Form.Item>
-
+            </Col>
+            <Col xs={24} md={12}>
               <Form.Item
-                label="场景描述"
-                required
-                tooltip="详细描述场景的背景、目标和预期结果"
+                label="时间步长"
+                name="timeStep"
+                rules={[{ required: true, message: '请选择时间步长' }]}
+                tooltip="每个Tick代表的时间跨度"
               >
-                <TextArea
-                  placeholder="描述场景的背景、模拟目标和预期分析结果..."
-                  value={value.description}
-                  onChange={(e) => handleChange('description', e.target.value)}
-                  rows={4}
-                  maxLength={500}
-                  showCount
-                />
-              </Form.Item>
-            </Form>
-          </Card>
-        </Col>
-
-        {/* 场景类型 */}
-        <Col span={24}>
-          <Card title="场景类型" bordered={false}>
-            <Radio.Group
-              value={value.type}
-              onChange={(e) => handleChange('type', e.target.value)}
-              style={{ width: '100%' }}
-            >
-              <Row gutter={[16, 16]}>
-                {sceneTypes.map((type) => (
-                  <Col span={12} key={type.value}>
-                    <Radio.Button
-                      value={type.value}
-                      style={{
-                        width: '100%',
-                        height: 'auto',
-                        padding: 16,
-                        borderRadius: 8,
-                        borderColor: value.type === type.value ? type.color : undefined,
-                      }}
-                    >
-                      <div style={{ display: 'flex', alignItems: 'flex-start' }}>
-                        <span style={{ fontSize: 32, marginRight: 12 }}>
-                          {type.icon}
-                        </span>
-                        <div>
-                          <Text strong style={{ fontSize: 16, display: 'block' }}>
-                            {type.label}
-                          </Text>
-                          <Text type="secondary" style={{ fontSize: 13 }}>
-                            {type.description}
-                          </Text>
-                        </div>
-                      </div>
-                    </Radio.Button>
-                  </Col>
-                ))}
-              </Row>
-            </Radio.Group>
-          </Card>
-        </Col>
-
-        {/* 模拟时长 */}
-        <Col span={12}>
-          <Card title="模拟时长" bordered={false}>
-            <div style={{ textAlign: 'center', marginBottom: 16 }}>
-              <Text strong style={{ fontSize: 24 }}>
-                {value.duration} 天
-              </Text>
-            </div>
-            <Slider
-              value={value.duration}
-              onChange={(val) => handleChange('duration', val)}
-              min={7}
-              max={365}
-              step={1}
-              marks={{
-                7: '1周',
-                30: '1月',
-                90: '3月',
-                180: '6月',
-                365: '1年',
-              }}
-            />
-            <div style={{ marginTop: 12, padding: 12, background: '#f5f5f5', borderRadius: 4 }}>
-              <Text type="secondary">
-                {getDurationDescription(value.duration)}
-              </Text>
-            </div>
-          </Card>
-        </Col>
-
-        {/* 时间步长 */}
-        <Col span={12}>
-          <Card title="时间步长" bordered={false}>
-            <Radio.Group
-              value={value.timeStep}
-              onChange={(e) => handleChange('timeStep', e.target.value)}
-              style={{ width: '100%' }}
-            >
-              <Row gutter={[8, 8]}>
-                {timeSteps.map((step) => (
-                  <Col span={24} key={step.value}>
-                    <Radio.Button
-                      value={step.value}
-                      style={{
-                        width: '100%',
-                        height: 'auto',
-                        padding: 12,
-                        textAlign: 'left',
-                      }}
-                    >
-                      <div>
-                        <Text strong>{step.label}</Text>
-                        <Text type="secondary" style={{ display: 'block', fontSize: 12 }}>
-                          {step.description}
+                <Select placeholder="选择时间步长">
+                  {timeStepOptions.map((option) => (
+                    <Option key={option.value} value={option.value}>
+                      <Space>
+                        {option.icon}
+                        <span>{option.label}</span>
+                        <Text type="secondary" style={{ fontSize: 12 }}>
+                          - {option.description}
                         </Text>
-                      </div>
-                    </Radio.Button>
-                  </Col>
-                ))}
-              </Row>
-            </Radio.Group>
+                      </Space>
+                    </Option>
+                  ))}
+                </Select>
+              </Form.Item>
+            </Col>
+          </Row>
+
+          {/* 时间配置预览 */}
+          <Card
+            size="small"
+            title="配置预览"
+            style={{ marginTop: 16, backgroundColor: '#f6ffed' }}
+          >
+            <Row gutter={16}>
+              <Col span={8}>
+                <Text type="secondary">模拟时长:</Text>
+                <br />
+                <Text strong>
+                  {(() => {
+                    const days = form.getFieldValue('duration') || 365
+                    if (days >= 365) {
+                      const years = Math.floor(days / 365)
+                      const remainingDays = days % 365
+                      return `${years}年${remainingDays > 0 ? remainingDays + '天' : ''}`
+                    }
+                    return `${days}天`
+                  })()}
+                </Text>
+              </Col>
+              <Col span={8}>
+                <Text type="secondary">时间步长:</Text>
+                <br />
+                <Text strong>
+                  {(() => {
+                    const step = form.getFieldValue('timeStep')
+                    const option = timeStepOptions.find((opt) => opt.value === step)
+                    return option?.label || '1天'
+                  })()}
+                </Text>
+              </Col>
+              <Col span={8}>
+                <Text type="secondary">预计Tick数:</Text>
+                <br />
+                <Text strong style={{ color: '#1890ff', fontSize: 18 }}>
+                  {estimatedTicks.toLocaleString()}
+                </Text>
+              </Col>
+            </Row>
+            <Paragraph type="secondary" style={{ marginTop: 8, fontSize: 12 }}>
+              <InfoCircleOutlined /> 每个Tick代表一个时间步长，系统将在每个Tick执行Agent决策和交互计算
+            </Paragraph>
           </Card>
-        </Col>
-      </Row>
+        </Card>
 
-      {/* 配置摘要 */}
-      <Card title="配置摘要" style={{ marginTop: 24 }} bordered={false}>
-        <BasicConfigSummary value={value} />
-      </Card>
-    </div>
-  )
-}
+        {/* 高级选项 */}
+        <Card
+          title={
+            <Space>
+              <ThunderboltOutlined />
+              <span>高级选项</span>
+            </Space>
+          }
+          style={{ marginBottom: 24 }}
+        >
+          <Row gutter={16}>
+            <Col xs={24} md={12}>
+              <Form.Item
+                label="随机种子"
+                name={['environment', 'randomSeed']}
+                tooltip="设置随机种子以确保模拟结果可复现"
+              >
+                <InputNumber
+                  style={{ width: '100%' }}
+                  placeholder="留空则随机生成"
+                  min={0}
+                  max={999999}
+                />
+              </Form.Item>
+            </Col>
+            <Col xs={24} md={12}>
+              <Form.Item
+                label="并发Agent数"
+                name={['environment', 'maxConcurrentAgents']}
+                tooltip="同时处理的Agent数量上限"
+                initialValue={100}
+              >
+                <Slider min={10} max={1000} step={10} marks={{ 10: '10', 100: '100', 500: '500', 1000: '1000' }} />
+              </Form.Item>
+            </Col>
+          </Row>
 
-// 时长描述
-const getDurationDescription = (duration: number): string => {
-  if (duration <= 30) {
-    return '短期模拟，适合观察快速变化的现象，如突发事件的影响。'
-  }
-  if (duration <= 90) {
-    return '中期模拟，适合观察趋势性变化，如政策实施的初期效果。'
-  }
-  if (duration <= 180) {
-    return '中长期模拟，适合观察持续性影响，如社会态度的渐进变化。'
-  }
-  return '长期模拟，适合观察深远影响，如文化变迁和结构性变化。'
-}
+          <Form.Item
+            label="启用事件系统"
+            name={['environment', 'enableEvents']}
+            valuePropName="checked"
+            initialValue={true}
+          >
+            <Switch checkedChildren="启用" unCheckedChildren="关闭" />
+          </Form.Item>
 
-// 配置摘要组件
-const BasicConfigSummary: React.FC<{ value: BasicConfigProps['value'] }> = ({ value }) => {
-  const selectedType = sceneTypes.find((t) => t.value === value.type)
-  const selectedStep = timeSteps.find((s) => s.value === value.timeStep)
-
-  return (
-    <div>
-      <Row gutter={[24, 16]}>
-        <Col span={12}>
-          <Text strong>场景类型：</Text>
-          {selectedType ? (
-            <span style={{ marginLeft: 8 }}>
-              {selectedType.icon} {selectedType.label}
-            </span>
-          ) : (
-            <Text type="secondary">未选择</Text>
-          )}
-        </Col>
-        <Col span={12}>
-          <Text strong>模拟时长：</Text>
-          <span style={{ marginLeft: 8 }}>{value.duration} 天</span>
-          <Text type="secondary" style={{ marginLeft: 8 }}>
-            （约{(value.duration / 30).toFixed(1)}个月）
-          </Text>
-        </Col>
-        <Col span={12}>
-          <Text strong>时间步长：</Text>
-          <span style={{ marginLeft: 8 }}>{selectedStep?.label || '未选择'}</span>
-        </Col>
-        <Col span={12}>
-          <Text strong>预计Tick数：</Text>
-          <span style={{ marginLeft: 8 }}>
-            {Math.ceil(value.duration / (value.timeStep === 'day' ? 1 : value.timeStep === 'week' ? 7 : 30))}
-          </span>
-        </Col>
-      </Row>
+          <Form.Item
+            label="启用网络演化"
+            name={['environment', 'enableNetworkEvolution']}
+            valuePropName="checked"
+            initialValue={true}
+          >
+            <Switch checkedChildren="启用" unCheckedChildren="关闭" />
+          </Form.Item>
+        </Card>
+      </Form>
     </div>
   )
 }

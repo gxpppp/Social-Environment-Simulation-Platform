@@ -1,7 +1,7 @@
 import { Controller, Get, Post, Body, Param, UseGuards } from '@nestjs/common';
 import { ApiTags, ApiBearerAuth, ApiOperation } from '@nestjs/swagger';
 import { AuthGuard } from '@nestjs/passport';
-import { SimulationsService } from './simulations.service';
+import { SimulationsService, SimulationSession } from './simulations.service';
 
 @ApiTags('模拟')
 @ApiBearerAuth()
