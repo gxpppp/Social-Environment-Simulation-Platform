@@ -74,7 +74,17 @@ const categoryNames: Record<string, string> = {
 
 export default function Settings() {
   const [form] = Form.useForm()
-  const { settings, updateSettings } = useSettingsStore()
+  const { 
+    apiKey, 
+    defaultModel, 
+    generationParams, 
+    darkMode, 
+    compactMode, 
+    language,
+    defaultSimulationDuration,
+    autoSave,
+    updateSettings 
+  } = useSettingsStore()
 
   // 模型相关状态
   const [models, setModels] = useState<ModelInfo[]>([])
@@ -87,7 +97,7 @@ export default function Settings() {
 
   // 加载模型列表
   const loadModels = useCallback(async (category?: string, search?: string) => {
-    if (!settings.apiKey) {
+    if (!apiKey) {
       message.warning('请先配置API Key')
       return
     }
@@ -108,14 +118,14 @@ export default function Settings() {
     } finally {
       setLoadingModels(false)
     }
-  }, [settings.apiKey])
+  }, [apiKey])
 
   // 首次加载和API Key变化时加载模型
   useEffect(() => {
-    if (settings.apiKey) {
+    if (apiKey) {
       loadModels()
     }
-  }, [settings.apiKey, loadModels])
+  }, [apiKey, loadModels])
 
   // 搜索防抖
   const debouncedSearch = useCallback(
@@ -201,7 +211,16 @@ export default function Settings() {
       <Form
         form={form}
         layout="vertical"
-        initialValues={settings}
+        initialValues={{
+          apiKey,
+          defaultModel,
+          generationParams,
+          darkMode,
+          compactMode,
+          language,
+          defaultSimulationDuration,
+          autoSave,
+        }}
         onFinish={handleSave}
       >
         <Tabs defaultActiveKey="model">
@@ -323,14 +342,14 @@ export default function Settings() {
                   </Form.Item>
 
                   {/* 选中模型详情 */}
-                  {settings.defaultModel && (
+                  {defaultModel && (
                     <Card
                       size="small"
                       title="选中模型详情"
                       style={{ marginTop: 16, backgroundColor: '#f6ffed' }}
                     >
                       {(() => {
-                        const model = models.find((m) => m.id === settings.defaultModel)
+                        const model = models.find((m) => m.id === defaultModel)
                         if (!model) return null
                         return (
                           <Space direction="vertical" style={{ width: '100%' }}>
