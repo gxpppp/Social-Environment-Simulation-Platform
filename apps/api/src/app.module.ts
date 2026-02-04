@@ -12,6 +12,7 @@ import { AgentsModule } from './modules/agents/agents.module';
 import { ScenesModule } from './modules/scenes/scenes.module';
 import { SimulationsModule } from './modules/simulations/simulations.module';
 import { ModelModule } from './modules/model/model.module';
+import { SimulationEngineModule } from './modules/simulation-engine/simulation-engine.module';
 
 @Module({
   imports: [
@@ -31,6 +32,7 @@ import { ModelModule } from './modules/model/model.module';
     ScenesModule,
     SimulationsModule,
     ModelModule,
+    SimulationEngineModule,
   ],
 })
 export class AppModule {}
