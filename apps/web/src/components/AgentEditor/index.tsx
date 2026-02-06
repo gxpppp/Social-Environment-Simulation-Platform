@@ -24,17 +24,22 @@ const defaultPersonality = {
   neuroticism: 0.5,
 }
 
-const defaultKnowledge = {
+const defaultKnowledge: { domains: string[]; depth: number; sources: string[] } = {
   domains: [],
   depth: 0.5,
   sources: [],
 }
 
-const defaultBehavior = {
-  decisionStyle: 'rational' as const,
+const defaultBehavior: { 
+  decisionStyle: 'rational' | 'intuitive' | 'dependent'
+  riskTolerance: number
+  socialOrientation: number
+  influence: 'local' | 'regional' | 'national'
+} = {
+  decisionStyle: 'rational',
   riskTolerance: 0.5,
   socialOrientation: 0.5,
-  influence: 'local' as const,
+  influence: 'local',
 }
 
 export const AgentEditor: React.FC<AgentEditorProps> = ({

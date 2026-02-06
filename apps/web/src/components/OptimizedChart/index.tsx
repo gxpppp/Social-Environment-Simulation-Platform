@@ -131,7 +131,7 @@ export const OptimizedChart: React.FC<OptimizedChartProps> = ({
     // 延迟初始化，避免阻塞主线程
     const timer = setTimeout(() => {
       chartInstance.current = echarts.init(chartRef.current!, theme)
-      chartInstance.current.setOption(processedOption, true)
+      chartInstance.current.setOption(processedOption as any, true)
       setIsLoading(false)
 
       // 绑定事件
@@ -152,7 +152,7 @@ export const OptimizedChart: React.FC<OptimizedChartProps> = ({
   // 更新选项
   useEffect(() => {
     if (!chartInstance.current || isLoading) return
-    chartInstance.current.setOption(processedOption, true)
+    chartInstance.current.setOption(processedOption as any, true)
   }, [processedOption, isLoading])
 
   // 监听resize

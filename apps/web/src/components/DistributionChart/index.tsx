@@ -156,7 +156,7 @@ export const DistributionChart: React.FC<DistributionChartProps> = ({
             ],
           };
 
-    chartInstance.current.setOption(option);
+    chartInstance.current.setOption(option as any);
 
     const handleResize = () => chartInstance.current?.resize();
     window.addEventListener('resize', handleResize);

@@ -228,7 +228,7 @@ export const NetworkGraph: React.FC<NetworkGraphProps> = ({
       animationEasingUpdate: 'quinticInOut',
     }
 
-    chartInstance.current.setOption(option)
+    chartInstance.current.setOption(option as any)
 
     // 绑定事件
     chartInstance.current.on('click', (params: any) => {

@@ -61,7 +61,7 @@ export const Agents: React.FC = () => {
   const loadAgents = async () => {
     try {
       setLoading(true)
-      const data = await api.get('/agents')
+      const data = await api.get('/agents') as Agent[]
       setAgents(data)
     } catch (error) {
       message.error('加载角色列表失败')
@@ -175,7 +175,7 @@ export const Agents: React.FC = () => {
         return (
           <div>
             {tags.map((tag) => (
-              <Tag key={tag} size="small" style={{ margin: '2px 4px 2px 0' }}>
+              <Tag key={tag} style={{ margin: '2px 4px 2px 0', fontSize: 12 }}>
                 {tag}
               </Tag>
             ))}

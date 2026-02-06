@@ -185,15 +185,15 @@ export const EventTimeline: React.FC<EventTimelineProps> = ({
             </div>
           </Tooltip>
         }
-        onClick={() => onEventClick?.(event)}
-        style={{ cursor: onEventClick ? 'pointer' : 'default' }}
       >
         <Card 
           size="small" 
+          onClick={() => onEventClick?.(event)}
           style={{ 
             marginBottom: 8,
             borderLeft: `3px solid ${config.color}`,
-            background: event.impact > 0.3 ? '#fff7e6' : '#fff'
+            background: event.impact > 0.3 ? '#fff7e6' : '#fff',
+            cursor: onEventClick ? 'pointer' : 'default'
           }}
         >
           <Space direction="vertical" style={{ width: '100%' }} size={4}>
@@ -230,7 +230,7 @@ export const EventTimeline: React.FC<EventTimelineProps> = ({
             {event.metadata && Object.keys(event.metadata).length > 0 && (
               <Space wrap style={{ marginTop: 4 }}>
                 {Object.entries(event.metadata).map(([key, value]) => (
-                  <Tag key={key} size="small" style={{ fontSize: 11 }}>
+                  <Tag key={key} style={{ fontSize: 11 }}>
                     {key}: {String(value).substring(0, 20)}
                   </Tag>
                 ))}

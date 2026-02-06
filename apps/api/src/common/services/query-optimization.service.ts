@@ -144,7 +144,7 @@ export class QueryOptimizationService {
         const result = await repository.delete(batch);
         affectedCount += result.affected || 0;
       } else if (operation === 'update' && updateData) {
-        const result = await repository.update(batch, updateData);
+        const result = await repository.update({ id: batch as any }, updateData);
         affectedCount += result.affected || 0;
       }
     }

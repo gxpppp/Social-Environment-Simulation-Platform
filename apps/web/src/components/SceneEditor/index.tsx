@@ -7,7 +7,7 @@ import {
   TeamOutlined,
   EyeOutlined
 } from '@ant-design/icons'
-import { BasicConfig } from './BasicConfig'
+import BasicConfig from './BasicConfig'
 import { AgentAssignment } from './AgentAssignment'
 
 const { Step } = Steps
@@ -230,7 +230,7 @@ const ScenePreview: React.FC<{
                 }, {} as Record<string, number>)
               ).map(([role, count]) => (
                 <li key={role}>
-                  {getRoleLabel(role)}: {count} 个
+                  {getRoleLabel(role as string)}: {count as number} 个
                 </li>
               ))}
             </ul>

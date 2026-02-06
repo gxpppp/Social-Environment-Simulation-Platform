@@ -83,12 +83,6 @@ export const BehaviorSettings: React.FC<BehaviorSettingsProps> = ({
     onChange({ ...value, influence: e.target.value })
   }
 
-  const getRiskInfo = (value: number) => {
-    if (value < 0.3) return { label: '保守型', color: '#52c41a' }
-    if (value < 0.6) return { label: '稳健型', color: '#faad14' }
-    return { label: '激进型', color: '#f5222d' }
-  }
-
   const getSocialLabel = (value: number) => {
     if (value < 0.3) return { label: '内向型', color: '#1890ff' }
     if (value < 0.6) return { label: '平衡型', color: '#faad14' }
@@ -280,6 +274,13 @@ const getSocialDescription = (value: number): string => {
     return '既能享受独处时光，也能在社交场合表现自如。能够根据情境调整自己的社交状态。'
   }
   return '热爱社交，精力充沛，喜欢成为关注的焦点。在社交活动中能够获得能量和满足感。'
+}
+
+// 风险偏好信息（文件级别函数）
+const getRiskInfo = (value: number) => {
+  if (value < 0.3) return { label: '保守型', color: '#52c41a' }
+  if (value < 0.6) return { label: '稳健型', color: '#faad14' }
+  return { label: '激进型', color: '#f5222d' }
 }
 
 // 行为模式摘要组件

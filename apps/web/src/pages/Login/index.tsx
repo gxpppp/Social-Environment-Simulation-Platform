@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Form, Input, Button, Card, Typography, message, Checkbox, Space, Divider } from 'antd';
 import { UserOutlined, LockOutlined, SafetyOutlined } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
-import { useAuthStore } from '@/stores/auth.store';
+import { useAuthStore, UserRole } from '@/stores/auth.store';
 
 const { Title, Text } = Typography;
 
@@ -23,7 +23,7 @@ export const Login: React.FC = () => {
         id: '1',
         username: values.username,
         email: `${values.username}@sesp.com`,
-        role: values.username === 'admin' ? 'admin' : 'user',
+        role: (values.username === 'admin' ? 'admin' : 'user') as UserRole,
         avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${values.username}`,
         permissions: [],
         createdAt: new Date().toISOString(),

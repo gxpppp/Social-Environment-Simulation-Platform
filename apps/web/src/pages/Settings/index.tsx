@@ -190,7 +190,7 @@ export default function Settings() {
         </Text>
         <Space size={8}>
           {model.capabilities.slice(0, 3).map((cap) => (
-            <Tag key={cap} size="small">
+            <Tag key={cap} style={{ fontSize: 12 }}>
               {cap}
             </Tag>
           ))}

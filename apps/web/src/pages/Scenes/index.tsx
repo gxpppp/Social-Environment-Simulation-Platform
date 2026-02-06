@@ -51,7 +51,7 @@ export const Scenes: React.FC = () => {
   const loadScenes = async () => {
     try {
       setLoading(true)
-      const data = await api.get('/scenes')
+      const data = await api.get('/scenes') as Scene[]
       setScenes(data)
     } catch (error) {
       message.error('加载场景列表失败')

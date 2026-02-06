@@ -9,8 +9,8 @@ import { useAuthStore } from '@/stores/auth.store'
 const Scenes = lazy(() => import('@/pages/Scenes').then(m => ({ default: m.Scenes })))
 const Agents = lazy(() => import('@/pages/Agents').then(m => ({ default: m.Agents })))
 const Simulation = lazy(() => import('@/pages/Simulation').then(m => ({ default: m.Simulation })))
-const Analytics = lazy(() => import('@/pages/Analytics').then(m => ({ default: m.Analytics })))
-const Settings = lazy(() => import('@/pages/Settings').then(m => ({ default: m.Settings })))
+const Analytics = lazy(() => import('@/pages/Analytics'))
+const Settings = lazy(() => import('@/pages/Settings'))
 const Login = lazy(() => import('@/pages/Login').then(m => ({ default: m.Login })))
 const Users = lazy(() => import('@/pages/Users').then(m => ({ default: m.Users })))
 
@@ -19,12 +19,14 @@ const PageLoading = () => (
   <div
     style={{
       display: 'flex',
+      flexDirection: 'column',
       justifyContent: 'center',
       alignItems: 'center',
       height: '100vh',
     }}
   >
-    <Spin size="large" tip="页面加载中..." />
+    <Spin size="large" />
+    <span style={{ marginTop: 16, color: '#999' }}>页面加载中...</span>
   </div>
 )
 

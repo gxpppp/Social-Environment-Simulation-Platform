@@ -102,7 +102,7 @@ export const TrendChart: React.FC<TrendChartProps> = ({
       },
       xAxis: {
         type: 'time',
-        boundaryGap: false,
+        boundaryGap: ['10%', '10%'] as [string, string],
         axisLabel: {
           formatter: (value: number) => {
             return new Date(value).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
@@ -198,7 +198,7 @@ export const TrendChart: React.FC<TrendChartProps> = ({
       animationDuration: 1000,
     };
 
-    chartInstance.current.setOption(option);
+    chartInstance.current.setOption(option as any);
 
     const handleResize = () => chartInstance.current?.resize();
     window.addEventListener('resize', handleResize);

@@ -60,7 +60,7 @@ export const AgentAssignment: React.FC<AgentAssignmentProps> = ({
   const loadAgents = async () => {
     try {
       setLoading(true)
-      const data = await api.get('/agents')
+      const data = await api.get('/agents') as Agent[]
       setAgents(data)
     } catch (error) {
       message.error('加载角色列表失败')
@@ -70,8 +70,9 @@ export const AgentAssignment: React.FC<AgentAssignmentProps> = ({
   }
 
   // 处理Transfer变化
-  const handleTransferChange = (nextTargetKeys: string[]) => {
-    const newAssignments: AssignedAgent[] = nextTargetKeys.map((agentId) => {
+  const handleTransferChange = (nextTargetKeys: React.Key[]) => {
+    const newAssignments: AssignedAgent[] = nextTargetKeys.map((key) => {
+      const agentId = key as string
       const existing = value.find((a) => a.agentId === agentId)
       return (
         existing || {
@@ -146,7 +147,6 @@ export const AgentAssignment: React.FC<AgentAssignmentProps> = ({
                 width: '45%',
                 height: 400,
               }}
-              loading={loading}
             />
           </Card>
         </Col>
@@ -165,7 +165,7 @@ export const AgentAssignment: React.FC<AgentAssignmentProps> = ({
                       <Card size="small" title={agent.name}>
                         <div style={{ marginBottom: 12 }}>
                           {tags.map((tag) => (
-                            <Tag key={tag} size="small" style={{ margin: '2px 4px 2px 0' }}>
+                            <Tag key={tag} style={{ margin: '2px 4px 2px 0', fontSize: 12 }}>
                               {tag}
                             </Tag>
                           ))}
