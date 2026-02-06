@@ -25,6 +25,8 @@ import {
   FilterOutlined,
 } from '@ant-design/icons'
 import { NetworkGraph } from '@/components/NetworkGraph'
+import { TrendChart } from '@/components/TrendChart'
+import { DistributionChart } from '@/components/DistributionChart'
 import dayjs from 'dayjs'
 
 const { Title } = Typography
@@ -217,9 +219,12 @@ export default function Analytics() {
           }
           key="trends"
         >
-          <Card title="观点演化趋势" style={{ height: 600 }}>
-            <Empty description="趋势分析功能开发中..." />
-          </Card>
+          <TrendChart
+            data={[]}
+            title="观点演化趋势"
+            height={550}
+            showDataZoom
+          />
         </Tabs.TabPane>
 
         <Tabs.TabPane
@@ -231,9 +236,24 @@ export default function Analytics() {
           }
           key="distribution"
         >
-          <Card title="观点分布统计" style={{ height: 600 }}>
-            <Empty description="分布统计功能开发中..." />
-          </Card>
+          <Row gutter={16}>
+            <Col span={12}>
+              <DistributionChart
+                data={[]}
+                type="pie"
+                title="观点分布（饼图）"
+                height={260}
+              />
+            </Col>
+            <Col span={12}>
+              <DistributionChart
+                data={[]}
+                type="bar"
+                title="观点分布（柱状图）"
+                height={260}
+              />
+            </Col>
+          </Row>
         </Tabs.TabPane>
       </Tabs>
     </div>
