@@ -5,8 +5,6 @@ import { ModelService, GenerateRequest } from './model.service';
 import { PromptTemplateService } from './prompt-template.service';
 
 @ApiTags('模型')
-@ApiBearerAuth()
-@UseGuards(AuthGuard('jwt'))
 @Controller('models')
 export class ModelController {
   constructor(
@@ -38,13 +36,31 @@ export class ModelController {
     return this.modelService.searchModels(query, category);
   }
 
+  @Get('templates')
+  @ApiOperation({ summary: '获取提示词模板类型' })
+  getTemplateTypes() {
+    return this.promptTemplateService.getTemplateTypes();
+  }
+
+  @Get('estimate-tokens')
+  @ApiOperation({ summary: '估算Token使用量' })
+  estimateTokens(@Query('text') text: string) {
+    const tokens = this.modelService.estimateTokens(text);
+    return { text, estimatedTokens: tokens };
+  }
+
+  // 以下接口需要认证
   @Post('generate')
+  @ApiBearerAuth()
+  @UseGuards(AuthGuard('jwt'))
   @ApiOperation({ summary: '生成文本' })
   async generate(@Body() request: GenerateRequest) {
     return this.modelService.generate(request);
   }
 
   @Post('select')
+  @ApiBearerAuth()
+  @UseGuards(AuthGuard('jwt'))
   @ApiOperation({ summary: '智能模型选择' })
   selectModel(
     @Body('taskType') taskType: 'decision' | 'analysis' | 'dialogue' | 'reasoning',
@@ -66,13 +82,9 @@ export class ModelController {
     return { modelId: selectedModel };
   }
 
-  @Get('templates')
-  @ApiOperation({ summary: '获取提示词模板类型' })
-  getTemplateTypes() {
-    return this.promptTemplateService.getTemplateTypes();
-  }
-
   @Post('test')
+  @ApiBearerAuth()
+  @UseGuards(AuthGuard('jwt'))
   @ApiOperation({ summary: '测试模型调用' })
   async testModel(
     @Body('model') model: string,
@@ -86,10 +98,13 @@ export class ModelController {
     });
   }
 
-  @Get('estimate-tokens')
-  @ApiOperation({ summary: '估算Token使用量' })
-  estimateTokens(@Query('text') text: string) {
-    const tokens = this.modelService.estimateTokens(text);
-    return { text, estimatedTokens: tokens };
+  @Post('validate')
+  @ApiBearerAuth()
+  @UseGuards(AuthGuard('jwt'))
+  @ApiOperation({ summary: '验证模型是否存在于Silicon Flow API' })
+  async validateModel(
+    @Body('modelId') modelId: string,
+  ) {
+    return this.modelService.validateModel(modelId);
   }
 }

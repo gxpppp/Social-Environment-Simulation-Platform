@@ -94,6 +94,9 @@ export default function Settings() {
   const [selectedCategory, setSelectedCategory] = useState('all')
   const [searchQuery, setSearchQuery] = useState('')
   const [apiKeyValid, setApiKeyValid] = useState<boolean | null>(null)
+  const [validatingModel, setValidatingModel] = useState(false)
+  const [modelValid, setModelValid] = useState<boolean | null>(null)
+  const [customModelId, setCustomModelId] = useState('')
 
   // 加载模型列表
   const loadModels = useCallback(async (category?: string, search?: string) => {
@@ -313,12 +316,59 @@ export default function Settings() {
                     </Col>
                   </Row>
 
-                  {/* 模型选择器 */}
+                  {/* 模型输入 */}
                   <Form.Item
                     label="默认模型"
                     name="defaultModel"
-                    rules={[{ required: true, message: '请选择默认模型' }]}
+                    rules={[{ required: true, message: '请输入或选择默认模型' }]}
                     tooltip="选择用于Agent生成和模拟的默认大语言模型"
+                  >
+                    <Input
+                      placeholder="输入模型ID (如: deepseek-ai/DeepSeek-V3)"
+                      value={customModelId}
+                      onChange={(e) => setCustomModelId(e.target.value)}
+                    />
+                  </Form.Item>
+
+                  {/* 验证按钮 - 独立行 */}
+                  <Form.Item>
+                    <Button
+                      type="primary"
+                      icon={<CheckCircleOutlined />}
+                      loading={validatingModel}
+                      onClick={async () => {
+                        if (!customModelId) {
+                          message.warning('请输入模型ID')
+                          return
+                        }
+                        setValidatingModel(true)
+                        try {
+                          const result = await modelApi.validateModel(customModelId)
+                          if (result.valid) {
+                            message.success(result.message)
+                            setModelValid(true)
+                            // 如果验证成功，更新表单值
+                            form.setFieldValue('defaultModel', customModelId)
+                          } else {
+                            message.error(result.message)
+                            setModelValid(false)
+                          }
+                        } catch (error: any) {
+                          message.error(error.message || '验证失败')
+                          setModelValid(false)
+                        } finally {
+                          setValidatingModel(false)
+                        }
+                      }}
+                    >
+                      验证模型
+                    </Button>
+                  </Form.Item>
+
+                  {/* 模型选择下拉框（可选） */}
+                  <Form.Item
+                    label="或从列表选择"
+                    tooltip="从已知的模型列表中选择"
                   >
                     <Select
                       showSearch
@@ -326,6 +376,11 @@ export default function Settings() {
                       optionFilterProp="children"
                       loading={loadingModels}
                       style={{ width: '100%' }}
+                      onChange={(value) => {
+                        form.setFieldValue('defaultModel', value)
+                        setCustomModelId(value as string)
+                        setModelValid(true)
+                      }}
                       dropdownRender={(menu) => (
                         <div>
                           {loadingModels && (
@@ -346,11 +401,42 @@ export default function Settings() {
                     <Card
                       size="small"
                       title="选中模型详情"
-                      style={{ marginTop: 16, backgroundColor: '#f6ffed' }}
+                      style={{ marginTop: 16, backgroundColor: modelValid === false ? '#fff2f0' : '#f6ffed' }}
                     >
                       {(() => {
                         const model = models.find((m) => m.id === defaultModel)
-                        if (!model) return null
+                        // 如果验证失败，显示验证失败提示
+                        if (modelValid === false) {
+                          return (
+                            <Alert
+                              message="模型验证失败"
+                              description={`模型ID "${defaultModel}" 未通过 Silicon Flow API 验证。请检查模型ID是否正确，或点击"验证"按钮重新验证。`}
+                              type="error"
+                              showIcon
+                            />
+                          )
+                        }
+                        // 如果模型不在本地列表中，但验证通过
+                        if (!model && modelValid === true) {
+                          return (
+                            <Alert
+                              message="模型已通过API验证"
+                              description={`模型ID "${defaultModel}" 已通过 Silicon Flow API 验证，可以正常使用。`}
+                              type="success"
+                              showIcon
+                            />
+                          )
+                        }
+                        if (!model) {
+                          return (
+                            <Alert
+                              message="模型未找到"
+                              description={`模型ID "${defaultModel}" 不在可用模型列表中。请检查模型ID是否正确，或从列表中选择一个已知的模型。`}
+                              type="warning"
+                              showIcon
+                            />
+                          )
+                        }
                         return (
                           <Space direction="vertical" style={{ width: '100%' }}>
                             <Space>

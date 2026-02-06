@@ -128,11 +128,11 @@ export class QueryOptimizationService {
   /**
    * 批量操作优化
    */
-  async batchOperation<T>(
+  async batchOperation<T extends { id: string }>(
     repository: Repository<T>,
     ids: string[],
     operation: 'delete' | 'update',
-    updateData?: Partial<T>,
+    updateData?: Partial<Omit<T, 'id'>>,
   ): Promise<number> {
     const batchSize = 100;
     let affectedCount = 0;
@@ -144,7 +144,7 @@ export class QueryOptimizationService {
         const result = await repository.delete(batch);
         affectedCount += result.affected || 0;
       } else if (operation === 'update' && updateData) {
-        const result = await repository.update({ id: batch as any }, updateData);
+        const result = await repository.update({ id: batch as any }, updateData as any);
         affectedCount += result.affected || 0;
       }
     }

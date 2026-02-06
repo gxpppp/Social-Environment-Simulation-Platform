@@ -72,4 +72,8 @@ export const modelApi = {
   // 估算Token使用量
   estimateTokens: (text: string): Promise<{ text: string; estimatedTokens: number }> =>
     api.get('/models/estimate-tokens', { params: { text } }),
+
+  // 验证模型是否存在于Silicon Flow API
+  validateModel: (modelId: string): Promise<{ valid: boolean; message: string }> =>
+    api.post('/models/validate', { modelId }),
 }

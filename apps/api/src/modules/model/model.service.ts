@@ -304,6 +304,18 @@ export class ModelService {
   private loadDefaultModels(): void {
     this.modelsCache = [
       {
+        id: 'deepseek-ai/DeepSeek-V3.2',
+        name: 'DeepSeek V3.2',
+        description: '深度求索V3.2，最新通用大模型，性能更强',
+        maxTokens: 8192,
+        contextWindow: 128000,
+        pricing: { input: 0.002, output: 0.008 },
+        capabilities: ['chat', 'analysis', 'reasoning', 'coding'],
+        category: 'text',
+        isPro: false,
+        provider: 'deepseek-ai',
+      },
+      {
         id: 'deepseek-ai/DeepSeek-V3',
         name: 'DeepSeek V3',
         description: '深度求索V3，通用能力强',
@@ -539,6 +551,67 @@ export class ModelService {
     const chineseChars = (text.match(/[\u4e00-\u9fa5]/g) || []).length;
     const englishWords = (text.match(/[a-zA-Z]+/g) || []).length;
     return Math.ceil(chineseChars + englishWords * 1.3);
+  }
+
+  /**
+   * 验证模型是否存在于Silicon Flow API
+   */
+  async validateModel(modelId: string, apiKey?: string): Promise<{ valid: boolean; message: string }> {
+    const key = apiKey || this.configService.get<string>('SILICON_FLOW_API_KEY');
+    
+    if (!key) {
+      throw new HttpException(
+        'Silicon Flow API Key not configured',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
+    try {
+      // 尝试用该模型发送一个简单的请求来验证
+      const response = await firstValueFrom(
+        this.httpService.post<SiliconFlowResponse>(
+          this.apiUrl,
+          {
+            model: modelId,
+            messages: [{ role: 'user', content: 'Hi' }],
+            max_tokens: 1,
+            stream: false,
+          },
+          {
+            headers: {
+              'Authorization': `Bearer ${key}`,
+              'Content-Type': 'application/json',
+            },
+            timeout: 30000,
+          },
+        ),
+      );
+
+      if (response.data && response.data.choices && response.data.choices.length > 0) {
+        return { valid: true, message: '模型验证成功' };
+      }
+      
+      return { valid: false, message: '模型返回异常，请检查模型ID是否正确' };
+    } catch (error) {
+      if (error instanceof AxiosError) {
+        const status = error.response?.status;
+        const message = error.response?.data?.error?.message || error.message;
+        
+        if (status === 400 && message.includes('model')) {
+          return { valid: false, message: `模型 "${modelId}" 不存在或不可用，请检查模型ID是否正确` };
+        }
+        if (status === 401) {
+          throw new HttpException('Invalid API Key', HttpStatus.UNAUTHORIZED);
+        }
+        if (status === 429) {
+          throw new HttpException('Rate limit exceeded', HttpStatus.TOO_MANY_REQUESTS);
+        }
+        
+        return { valid: false, message: `验证失败: ${message}` };
+      }
+      
+      return { valid: false, message: `验证失败: ${error.message}` };
+    }
   }
 
   /**
