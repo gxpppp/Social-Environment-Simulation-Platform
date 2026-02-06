@@ -7,11 +7,15 @@ import {
   ManyToOne,
   JoinColumn,
   OneToMany,
+  Index,
 } from 'typeorm';
 import { User } from './user.entity';
 import { Agent } from './agent.entity';
 
 @Entity('scenes')
+@Index(['createdBy', 'status'])
+@Index(['type', 'status'])
+@Index(['createdAt'])
 export class Scene {
   @PrimaryGeneratedColumn('uuid')
   id: string;

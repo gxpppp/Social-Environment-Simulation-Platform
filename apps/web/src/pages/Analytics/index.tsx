@@ -223,7 +223,6 @@ export default function Analytics() {
             data={[]}
             title="观点演化趋势"
             height={550}
-            showDataZoom
           />
         </Tabs.TabPane>
 

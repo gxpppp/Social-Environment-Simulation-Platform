@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react'
 import { Card, Button, Table, Avatar, Tag, Space, message, Popconfirm } from 'antd'
 import { PlusOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons'
 import { AgentEditor } from '@/components/AgentEditor'
+import { ImportButton } from '@/components/ImportButton'
+import { BatchOperations } from '@/components/BatchOperations'
 import api from '@/services/api'
 
 interface Agent {
@@ -53,6 +55,7 @@ export const Agents: React.FC = () => {
   const [loading, setLoading] = useState(false)
   const [editorVisible, setEditorVisible] = useState(false)
   const [editingAgent, setEditingAgent] = useState<Agent | null>(null)
+  const [selectedRowKeys, setSelectedRowKeys] = useState<React.Key[]>([])
 
   // 加载角色列表
   const loadAgents = async () => {
@@ -109,6 +112,36 @@ export const Agents: React.FC = () => {
     } catch (error) {
       message.error('删除失败')
     }
+  }
+
+  // 批量导入成功回调
+  const handleImportSuccess = (data: any[]) => {
+    message.success(`成功导入 ${data.length} 个角色`)
+    loadAgents()
+  }
+
+  // 批量删除
+  const handleBatchDelete = async (keys: React.Key[]) => {
+    await Promise.all(keys.map((key) => api.delete(`/agents/${key}`)))
+    loadAgents()
+    setSelectedRowKeys([])
+  }
+
+  // 批量复制
+  const handleBatchCopy = async (keys: React.Key[]) => {
+    const agentsToCopy = agents.filter((a) => keys.includes(a.id))
+    await Promise.all(
+      agentsToCopy.map((agent) =>
+        api.post('/agents', {
+          ...agent,
+          name: `${agent.name} (复制)`,
+          id: undefined,
+          createdAt: undefined,
+        })
+      )
+    )
+    loadAgents()
+    setSelectedRowKeys([])
   }
 
   const columns = [
@@ -237,9 +270,18 @@ export const Agents: React.FC = () => {
     <div>
       <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 16 }}>
         <h1>角色管理</h1>
-        <Button type="primary" icon={<PlusOutlined />} onClick={handleCreate}>
-          创建角色
-        </Button>
+        <BatchOperations
+          selectedKeys={selectedRowKeys}
+          onClearSelection={() => setSelectedRowKeys([])}
+          onDelete={handleBatchDelete}
+          onCopy={handleBatchCopy}
+          entityName="角色"
+        >
+          <ImportButton type="agents" onSuccess={handleImportSuccess} />
+          <Button type="primary" icon={<PlusOutlined />} onClick={handleCreate}>
+            创建角色
+          </Button>
+        </BatchOperations>
       </div>
       <Card>
         <Table
@@ -248,6 +290,10 @@ export const Agents: React.FC = () => {
           loading={loading}
           rowKey="id"
           pagination={{ pageSize: 10 }}
+          rowSelection={{
+            selectedRowKeys,
+            onChange: setSelectedRowKeys,
+          }}
         />
       </Card>
 

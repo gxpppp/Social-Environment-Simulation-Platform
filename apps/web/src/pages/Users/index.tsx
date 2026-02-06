@@ -24,7 +24,7 @@ import {
   LockOutlined,
   UnlockOutlined,
   TeamOutlined,
-  AdminOutlined,
+  CrownOutlined,
 } from '@ant-design/icons';
 import { useAuthStore, User, UserRole } from '@/stores/auth.store';
 import { CanManageUsers } from '@/components/Permission';

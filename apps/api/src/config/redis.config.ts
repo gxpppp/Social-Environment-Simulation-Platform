@@ -1,31 +1,29 @@
+import { CacheModuleOptions } from '@nestjs/cache-manager';
 import { ConfigService } from '@nestjs/config';
+import * as redisStore from 'cache-manager-redis-store';
 
-export interface RedisConfig {
-  host: string;
-  port: number;
-  ttl: number;
-  max: number;
-}
-
-export const redisConfig = (configService: ConfigService): RedisConfig => ({
+export const getRedisConfig = (configService: ConfigService): CacheModuleOptions => ({
+  store: redisStore,
   host: configService.get('REDIS_HOST', 'localhost'),
   port: configService.get('REDIS_PORT', 6379),
-  ttl: 300, // 默认缓存5分钟
-  max: 100, // 最大缓存条目数
+  password: configService.get('REDIS_PASSWORD', undefined),
+  db: configService.get('REDIS_DB', 0),
+  ttl: configService.get('REDIS_TTL', 3600), // 默认1小时
+  maxRetriesPerRequest: 3,
+  enableReadyCheck: true,
 });
 
-// 缓存键前缀
 export const CACHE_KEYS = {
-  AGENTS: 'agents',
   SCENES: 'scenes',
-  MODELS: 'models',
-  SIMULATION_STATUS: 'simulation:status',
+  AGENTS: 'agents',
+  SIMULATIONS: 'simulations',
+  USERS: 'users',
+  ANALYTICS: 'analytics',
 } as const;
 
-// 缓存TTL配置（秒）
 export const CACHE_TTL = {
-  AGENTS: 60, // 1分钟
-  SCENES: 60,
-  MODELS: 3600, // 1小时
-  SIMULATION_STATUS: 5, // 5秒
+  SHORT: 60,      // 1分钟
+  MEDIUM: 300,    // 5分钟
+  LONG: 3600,     // 1小时
+  VERY_LONG: 86400, // 1天
 } as const;

@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react'
 import { Card, Button, Table, Tag, Space, message, Popconfirm } from 'antd'
 import { PlusOutlined, EditOutlined, PlayCircleOutlined, DeleteOutlined } from '@ant-design/icons'
 import { SceneEditor } from '@/components/SceneEditor'
+import { ImportButton } from '@/components/ImportButton'
+import { BatchOperations } from '@/components/BatchOperations'
 import api from '@/services/api'
 
 interface Scene {
@@ -43,6 +45,7 @@ export const Scenes: React.FC = () => {
   const [loading, setLoading] = useState(false)
   const [editorVisible, setEditorVisible] = useState(false)
   const [editingScene, setEditingScene] = useState<Scene | null>(null)
+  const [selectedRowKeys, setSelectedRowKeys] = useState<React.Key[]>([])
 
   // 加载场景列表
   const loadScenes = async () => {
@@ -112,6 +115,36 @@ export const Scenes: React.FC = () => {
     } catch (error) {
       message.error('启动失败')
     }
+  }
+
+  // 批量导入成功回调
+  const handleImportSuccess = (data: any[]) => {
+    message.success(`成功导入 ${data.length} 个场景`)
+    loadScenes()
+  }
+
+  // 批量删除
+  const handleBatchDelete = async (keys: React.Key[]) => {
+    await Promise.all(keys.map((key) => api.delete(`/scenes/${key}`)))
+    loadScenes()
+    setSelectedRowKeys([])
+  }
+
+  // 批量复制
+  const handleBatchCopy = async (keys: React.Key[]) => {
+    const scenesToCopy = scenes.filter((s) => keys.includes(s.id))
+    await Promise.all(
+      scenesToCopy.map((scene) =>
+        api.post('/scenes', {
+          ...scene,
+          name: `${scene.name} (复制)`,
+          id: undefined,
+          createdAt: undefined,
+        })
+      )
+    )
+    loadScenes()
+    setSelectedRowKeys([])
   }
 
   const columns = [
@@ -209,9 +242,18 @@ export const Scenes: React.FC = () => {
     <div>
       <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 16 }}>
         <h1>场景管理</h1>
-        <Button type="primary" icon={<PlusOutlined />} onClick={handleCreate}>
-          创建场景
-        </Button>
+        <BatchOperations
+          selectedKeys={selectedRowKeys}
+          onClearSelection={() => setSelectedRowKeys([])}
+          onDelete={handleBatchDelete}
+          onCopy={handleBatchCopy}
+          entityName="场景"
+        >
+          <ImportButton type="scenes" onSuccess={handleImportSuccess} />
+          <Button type="primary" icon={<PlusOutlined />} onClick={handleCreate}>
+            创建场景
+          </Button>
+        </BatchOperations>
       </div>
       <Card>
         <Table
@@ -220,6 +262,10 @@ export const Scenes: React.FC = () => {
           loading={loading}
           rowKey="id"
           pagination={{ pageSize: 10 }}
+          rowSelection={{
+            selectedRowKeys,
+            onChange: setSelectedRowKeys,
+          }}
         />
       </Card>
 

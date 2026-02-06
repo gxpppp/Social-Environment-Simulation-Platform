@@ -6,10 +6,14 @@ import {
   UpdateDateColumn,
   ManyToOne,
   JoinColumn,
+  Index,
 } from 'typeorm';
 import { User } from './user.entity';
 
 @Entity('agents')
+@Index(['createdBy', 'status'])
+@Index(['status'])
+@Index(['createdAt'])
 export class Agent {
   @PrimaryGeneratedColumn('uuid')
   id: string;
