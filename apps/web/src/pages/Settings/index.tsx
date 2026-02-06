@@ -38,6 +38,8 @@ import {
 } from '@ant-design/icons'
 import { useSettingsStore } from '@/stores/settings.store'
 import { modelApi, ModelInfo } from '@/services/model.service'
+import { validateModel as validateModelDirect } from '@/services/siliconflow.service'
+import { storeApiKey, getApiKey, clearApiKey, hasApiKey } from '@/utils/crypto'
 import { debounce } from 'lodash-es'
 
 const { Title, Text, Paragraph } = Typography
@@ -123,12 +125,25 @@ export default function Settings() {
     }
   }, [apiKey])
 
-  // 首次加载和API Key变化时加载模型
+  // 首次加载时从本地存储加载 API Key
   useEffect(() => {
-    if (apiKey) {
+    const loadApiKeyFromStorage = async () => {
+      const storedApiKey = await getApiKey()
+      if (storedApiKey) {
+        form.setFieldValue('apiKey', storedApiKey)
+        // 触发验证
+        validateApiKey()
+      }
+    }
+    loadApiKeyFromStorage()
+  }, [form])
+
+  // API Key变化时加载模型
+  useEffect(() => {
+    if (apiKeyValid) {
       loadModels()
     }
-  }, [apiKey, loadModels])
+  }, [apiKeyValid, loadModels])
 
   // 搜索防抖
   const debouncedSearch = useCallback(
@@ -174,10 +189,50 @@ export default function Settings() {
   }
 
   // 保存设置
-  const handleSave = (values: any) => {
-    updateSettings(values)
+  const handleSave = async (values: any) => {
+    // API Key 单独存储在本地加密存储中，不发送到服务器
+    const { apiKey, ...otherSettings } = values
+    
+    // 如果输入了新的 API Key，保存到本地加密存储
+    if (apiKey && apiKey.startsWith('sk-')) {
+      await storeApiKey(apiKey)
+    }
+    
+    // 保存其他设置到服务器
+    updateSettings(otherSettings)
     message.success('设置已保存')
   }
+
+  // 验证模型
+  const handleValidateModel = useCallback(async () => {
+    const modelId = form.getFieldValue('defaultModel')
+    if (!modelId) {
+      message.warning('请输入模型ID')
+      return
+    }
+    // 从本地存储获取 API Key
+    const apiKeyValue = await getApiKey()
+    if (!apiKeyValue) {
+      message.warning('请先输入并保存 API Key')
+      return
+    }
+    setValidatingModel(true)
+    try {
+      const result = await validateModelDirect(modelId)
+      if (result.valid) {
+        message.success(result.message)
+        setModelValid(true)
+      } else {
+        message.error(result.message)
+        setModelValid(false)
+      }
+    } catch (error: any) {
+      message.error(error.message || '验证失败')
+      setModelValid(false)
+    } finally {
+      setValidatingModel(false)
+    }
+  }, [form])
 
   // 渲染模型选项
   const renderModelOption = (model: ModelInfo) => (
@@ -247,26 +302,54 @@ export default function Settings() {
               />
 
               <Form.Item
-                label="API Key"
+                label={
+                  <span>
+                    API Key
+                    <Tooltip title="API Key 仅存储在您的浏览器本地，使用 AES-256 加密保护，不会发送到服务器">
+                      <InfoCircleOutlined style={{ marginLeft: 4, color: '#1890ff' }} />
+                    </Tooltip>
+                  </span>
+                }
                 name="apiKey"
                 rules={[{ required: true, message: '请输入API Key' }]}
               >
                 <Input.Password
                   prefix={<KeyOutlined />}
                   placeholder="sk-xxxxxxxxxxxxxxxx"
-                  addonAfter={
-                    <Button
-                      type="primary"
-                      size="small"
-                      icon={apiKeyValid ? <CheckCircleOutlined /> : <ReloadOutlined />}
-                      onClick={validateApiKey}
-                      loading={loadingModels}
-                    >
-                      {apiKeyValid ? '已验证' : '验证并加载'}
-                    </Button>
-                  }
                 />
               </Form.Item>
+              
+              {/* API Key 操作按钮 */}
+              <div style={{ marginBottom: 16 }}>
+                <Button
+                  type="primary"
+                  icon={<CheckCircleOutlined />}
+                  onClick={async () => {
+                    const apiKeyValue = form.getFieldValue('apiKey')
+                    if (!apiKeyValue || !apiKeyValue.startsWith('sk-')) {
+                      message.warning('请输入有效的 API Key（以 sk- 开头）')
+                      return
+                    }
+                    await storeApiKey(apiKeyValue)
+                    message.success('API Key 已保存到本地')
+                    validateApiKey()
+                  }}
+                  style={{ marginRight: 8 }}
+                >
+                  保存 API Key
+                </Button>
+                <Button
+                  icon={<ReloadOutlined />}
+                  onClick={validateApiKey}
+                  loading={loadingModels}
+                >
+                  {apiKeyValid ? '已验证' : '验证并加载模型'}
+                </Button>
+              </div>
+              
+              <Text type="secondary" style={{ fontSize: 12 }}>
+                <InfoCircleOutlined /> API Key 仅保存在浏览器本地存储中，使用 AES-256 加密，不会上传到服务器
+              </Text>
             </Card>
 
             <Card
@@ -325,45 +408,21 @@ export default function Settings() {
                   >
                     <Input
                       placeholder="输入模型ID (如: deepseek-ai/DeepSeek-V3)"
-                      value={customModelId}
                       onChange={(e) => setCustomModelId(e.target.value)}
                     />
                   </Form.Item>
 
-                  {/* 验证按钮 - 独立行 */}
-                  <Form.Item>
+                  {/* 验证按钮 - 完全在表单外部 */}
+                  <div style={{ marginBottom: 24 }}>
                     <Button
                       type="primary"
                       icon={<CheckCircleOutlined />}
                       loading={validatingModel}
-                      onClick={async () => {
-                        if (!customModelId) {
-                          message.warning('请输入模型ID')
-                          return
-                        }
-                        setValidatingModel(true)
-                        try {
-                          const result = await modelApi.validateModel(customModelId)
-                          if (result.valid) {
-                            message.success(result.message)
-                            setModelValid(true)
-                            // 如果验证成功，更新表单值
-                            form.setFieldValue('defaultModel', customModelId)
-                          } else {
-                            message.error(result.message)
-                            setModelValid(false)
-                          }
-                        } catch (error: any) {
-                          message.error(error.message || '验证失败')
-                          setModelValid(false)
-                        } finally {
-                          setValidatingModel(false)
-                        }
-                      }}
+                      onClick={handleValidateModel}
                     >
                       验证模型
                     </Button>
-                  </Form.Item>
+                  </div>
 
                   {/* 模型选择下拉框（可选） */}
                   <Form.Item
@@ -397,46 +456,50 @@ export default function Settings() {
                   </Form.Item>
 
                   {/* 选中模型详情 */}
-                  {defaultModel && (
-                    <Card
-                      size="small"
-                      title="选中模型详情"
-                      style={{ marginTop: 16, backgroundColor: modelValid === false ? '#fff2f0' : '#f6ffed' }}
-                    >
-                      {(() => {
-                        const model = models.find((m) => m.id === defaultModel)
-                        // 如果验证失败，显示验证失败提示
-                        if (modelValid === false) {
-                          return (
-                            <Alert
-                              message="模型验证失败"
-                              description={`模型ID "${defaultModel}" 未通过 Silicon Flow API 验证。请检查模型ID是否正确，或点击"验证"按钮重新验证。`}
-                              type="error"
-                              showIcon
-                            />
-                          )
-                        }
-                        // 如果模型不在本地列表中，但验证通过
-                        if (!model && modelValid === true) {
-                          return (
-                            <Alert
-                              message="模型已通过API验证"
-                              description={`模型ID "${defaultModel}" 已通过 Silicon Flow API 验证，可以正常使用。`}
-                              type="success"
-                              showIcon
-                            />
-                          )
-                        }
-                        if (!model) {
-                          return (
-                            <Alert
-                              message="模型未找到"
-                              description={`模型ID "${defaultModel}" 不在可用模型列表中。请检查模型ID是否正确，或从列表中选择一个已知的模型。`}
-                              type="warning"
-                              showIcon
-                            />
-                          )
-                        }
+                  <Form.Item shouldUpdate={(prevValues, currentValues) => prevValues.defaultModel !== currentValues.defaultModel}>
+                    {({ getFieldValue }) => {
+                      const currentModelId = getFieldValue('defaultModel')
+                      if (!currentModelId) return null
+                      const model = models.find((m) => m.id === currentModelId)
+                      return (
+                        <Card
+                          size="small"
+                          title="选中模型详情"
+                          style={{ marginTop: 16, backgroundColor: modelValid === false ? '#fff2f0' : '#f6ffed' }}
+                        >
+                          {(() => {
+                            // 如果验证失败，显示验证失败提示
+                            if (modelValid === false) {
+                              return (
+                                <Alert
+                                  message="模型验证失败"
+                                  description={`模型ID "${currentModelId}" 未通过 Silicon Flow API 验证。请检查模型ID是否正确，或点击"验证"按钮重新验证。`}
+                                  type="error"
+                                  showIcon
+                                />
+                              )
+                            }
+                            // 如果模型不在本地列表中，但验证通过
+                            if (!model && modelValid === true) {
+                              return (
+                                <Alert
+                                  message="模型已通过API验证"
+                                  description={`模型ID "${currentModelId}" 已通过 Silicon Flow API 验证，可以正常使用。`}
+                                  type="success"
+                                  showIcon
+                                />
+                              )
+                            }
+                            if (!model) {
+                              return (
+                                <Alert
+                                  message="模型未找到"
+                                  description={`模型ID "${currentModelId}" 不在可用模型列表中。请检查模型ID是否正确，或从列表中选择一个已知的模型。`}
+                                  type="warning"
+                                  showIcon
+                                />
+                              )
+                            }
                         return (
                           <Space direction="vertical" style={{ width: '100%' }}>
                             <Space>
@@ -492,7 +555,9 @@ export default function Settings() {
                         )
                       })()}
                     </Card>
-                  )}
+                  )
+                }}
+              </Form.Item>
                 </>
               )}
             </Card>

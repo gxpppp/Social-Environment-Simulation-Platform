@@ -74,6 +74,6 @@ export const modelApi = {
     api.get('/models/estimate-tokens', { params: { text } }),
 
   // 验证模型是否存在于Silicon Flow API
-  validateModel: (modelId: string): Promise<{ valid: boolean; message: string }> =>
-    api.post('/models/validate', { modelId }),
+  validateModel: (modelId: string, apiKey?: string): Promise<{ valid: boolean; message: string }> =>
+    api.post('/models/validate', { modelId, apiKey }),
 }

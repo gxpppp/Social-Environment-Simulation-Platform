@@ -5,8 +5,6 @@ import { ScenesService } from './scenes.service';
 import { Scene } from '../../entities/scene.entity';
 
 @ApiTags('场景')
-@ApiBearerAuth()
-@UseGuards(AuthGuard('jwt'))
 @Controller('scenes')
 export class ScenesController {
   constructor(private readonly scenesService: ScenesService) {}

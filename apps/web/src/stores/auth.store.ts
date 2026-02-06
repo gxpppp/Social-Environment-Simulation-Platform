@@ -89,6 +89,9 @@ export const useAuthStore = create<AuthState>()(
           ...(user.permissions || []),
         ];
         
+        // 保存 token 到 localStorage，供 API 拦截器使用
+        localStorage.setItem('token', token);
+        
         set({
           user: { ...user, permissions },
           isAuthenticated: true,
@@ -100,6 +103,9 @@ export const useAuthStore = create<AuthState>()(
 
       // 登出
       logout: () => {
+        // 清除 localStorage 中的 token
+        localStorage.removeItem('token');
+        
         set({
           user: null,
           isAuthenticated: false,

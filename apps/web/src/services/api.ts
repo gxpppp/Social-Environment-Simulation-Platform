@@ -24,9 +24,13 @@ api.interceptors.response.use(
   (response) => response.data,
   (error) => {
     if (error.response?.status === 401) {
-      localStorage.removeItem('token')
-      // 使用 replace 避免历史记录问题
-      window.location.replace('/login')
+      console.log('401 错误，当前路径:', window.location.pathname)
+      // 检查是否已经在登录页面
+      if (window.location.pathname !== '/login') {
+        localStorage.removeItem('token')
+        // 使用 replace 避免历史记录问题
+        window.location.replace('/login')
+      }
     }
     return Promise.reject(error.response?.data || error.message)
   }

@@ -5,8 +5,6 @@ import { AgentsService } from './agents.service';
 import { Agent } from '../../entities/agent.entity';
 
 @ApiTags('AI角色')
-@ApiBearerAuth()
-@UseGuards(AuthGuard('jwt'))
 @Controller('agents')
 export class AgentsController {
   constructor(private readonly agentsService: AgentsService) {}

@@ -99,12 +99,11 @@ export class ModelController {
   }
 
   @Post('validate')
-  @ApiBearerAuth()
-  @UseGuards(AuthGuard('jwt'))
   @ApiOperation({ summary: '验证模型是否存在于Silicon Flow API' })
   async validateModel(
     @Body('modelId') modelId: string,
+    @Body('apiKey') apiKey?: string,
   ) {
-    return this.modelService.validateModel(modelId);
+    return this.modelService.validateModel(modelId, apiKey);
   }
 }
